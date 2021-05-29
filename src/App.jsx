@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { Button } from 'react-bootstrap';
 import axios from 'axios';
 import PacmanLoader from "react-spinners/PacmanLoader";
+import DOMPurify from 'dompurify';
 
 const cssOverride = {
   display: 'block',
@@ -34,17 +35,20 @@ class Quiz extends React.Component {
       return (
         <>
           <h3>You Scored<br /> { score } / { this.state.triviaData.length }</h3>
-          {
-            this.state.triviaData.map((item, index) => {
-              return (
-                  <div key={index + item}>
-                      { this.state.answers[index]['user'] == this.state.answers[index]['answer'] ? <span>+</span> : <span>-</span> } 
-                      { item.question }
-                  </div>
-              )
-            })
-          }
-          <Button varian="primary" onClick={this.props.resetGame}>Reset Game ?</Button>
+          <div className="container text-left" style={{width: '550px', fontSize: '14px'}}>
+            <ul style={{listStyleType: 'none'}}>
+            {
+              this.state.triviaData.map((item, index) => {
+                return (
+                  <li key={index + item} style={{margin: '10px 0px', listStylePosition: 'inside', textIndent: '-1.25em'}}>{ this.state.answers[index]['user'] == this.state.answers[index]['answer'] ? <span style={{color: "red", fontSize: '18px', fontWeight: 'bold'}}>+</span> : <span style={{color: "green", fontSize: '20px', fontWeight: 'bold'}}>-</span> } <span dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(item.question)}}></span></li>
+                )
+              })
+            }
+            </ul>
+          </div>
+          Reset Game? <br />
+          <Button className="mr-2" variant="success" size="sm" onClick={ this.props.resetGame }>Yes</Button>
+          <Button variant="danger" size="sm" onClick={ this.props.endGame }>No</Button>
         </>
       )
     };
@@ -55,8 +59,9 @@ class Quiz extends React.Component {
           <div className="row">
               <div className="col-12 text-center">{item.category}</div>
           </div>
-          <div className="row mt-4 d-flex align-items-center justify-content-center" style={{border: "1px solid black", height: '300px', width: '250px'}}>
-            <div className="col-12 text-center">{item.question}</div>
+          <div className="row mt-4 d-flex align-items-center justify-content-center" style={{border: "1px solid black", height: '300px', width: '250px', wordBreak: 'break-word', fontSize: '14px'}}>
+            <div className="col-12 text-center" dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(item.question)}}></div>
+          
           </div>
           <div className="row mt-4">
             <div className="col-12 text-center">{ index + 1 } out of {this.state.triviaData.length}</div>
@@ -73,8 +78,8 @@ class Quiz extends React.Component {
       <>
        <div className="container d-flex justify-content-center flex-column align-items-center">
          { this.state.slide <= this.state.triviaData.length && cards[this.state.slide] }
-         { this.state.slide == this.state.triviaData.length && <ScoreCard /> }
        </div> 
+       { this.state.slide == this.state.triviaData.length && <ScoreCard /> }
       </>
     )
   }
@@ -89,6 +94,7 @@ class App extends React.Component {
       loading: true,
       error: false,
       fetched: false,
+      endgame: false,
     }
   }
   async componentDidMount() {
@@ -115,6 +121,10 @@ class App extends React.Component {
     });
   }
 
+  endGame() {
+    this.setState({ endgame: true});
+  }
+
   render() {
     return (
       <div className="App d-flex align-items-center justify-content-center flex-column">
@@ -131,7 +141,7 @@ class App extends React.Component {
           )
         }
         { 
-          !this.state.startQuiz && this.state.fetched && (
+          !this.state.startQuiz && this.state.fetched && !this.state.endgame && (
             <>
               <div className="m-4">
                 <p>You Will be Presented with 10 True / False Questions</p>
@@ -141,8 +151,12 @@ class App extends React.Component {
             </>
           )
         }
-        { this.state.startQuiz && 
-          <Quiz triviaData={ this.state.triviaData } resetGame={ this.resetGame.bind(this) } />
+        { this.state.startQuiz && !this.state.endgame &&
+          <Quiz triviaData={ this.state.triviaData } resetGame={ this.resetGame.bind(this) } endGame={ this.endGame.bind(this) } />
+        }
+        {
+          this.state.endgame && 
+          <div>Goodbye!</div>
         }
         </div>
       </div>
